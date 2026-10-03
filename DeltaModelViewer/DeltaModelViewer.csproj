@@ -1,0 +1,67 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <RootNamespace>DeltaModelViewer</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 应用图标（exe 内嵌；同时作为 Assets\app.ico 复制到输出目录，供运行时设置窗口/任务栏图标） -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Platforms>x64;ARM64</Platforms>
+    <PlatformTarget Condition="'$(RuntimeIdentifier)' == 'win-arm64'">ARM64</PlatformTarget>
+    <PlatformTarget Condition="'$(RuntimeIdentifier)' != 'win-arm64'">x64</PlatformTarget>
+    <RuntimeIdentifier Condition="'$(RuntimeIdentifier)' == ''">win-x64</RuntimeIdentifier>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
+    <SelfContained>true</SelfContained>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <!-- ================= Alpha 定时过期版（独立发布的版本） =================
+       编译：dotnet publish -c Alpha DeltaModelViewer/DeltaModelViewer.csproj
+       该配置定义 ALPHA_EXPIRY，启用 Core/TimeGuard.cs + Core/AlphaGateWindow.cs：
+       启动时向公网 NTP 服务器取时，系统时间与 NTP 不一致 / 已过 2026-09-24 00:00（北京时间）
+       / 无法完成校时，一律只提示并退出。Release 正式版不含这些代码，行为与原先一致。 -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Alpha'">
+    <DefineConstants>$(DefineConstants);ALPHA_EXPIRY</DefineConstants>
+    <Version>1.0.0-alpha.20260924</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0-alpha-expire-20260924</InformationalVersion>
+    <Product>UEFormat模型查看器 Alpha测试版</Product>
+    <AssemblyTitle>UEFormat模型查看器 Alpha测试版（2026-09-24 过期）</AssemblyTitle>
+    <Company>河豚潘PufferPan</Company>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.2.0" />
+    <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.28000.2270" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.8.3" />
+    <PackageReference Include="Vortice.DXGI" Version="3.8.3" />
+    <PackageReference Include="Vortice.D3DCompiler" Version="3.8.3" />
+    <PackageReference Include="Vortice.Mathematics" Version="2.1.1" />
+    <PackageReference Include="Vortice.WinUI" Version="3.8.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DeltaCore\DeltaCore.csproj" />
+    <EmbeddedResource Include="Assets\Warhouse_Bg_01.png" />
+    <Content Include="Assets\app.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- WinUI 3 发布时不会自动携带 XBF/PRI（XAML 编译产物），发布完成后直接拷贝 -->
+  <Target Name="CopyXamlResourcesAfterPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_XamlResources Include="$(OutDir)*.xbf" />
+      <_XamlResources Include="$(OutDir)$(TargetName).pri" Condition="Exists('$(OutDir)$(TargetName).pri')" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_XamlResources)" DestinationFolder="$(PublishDir)" SkipUnchangedFiles="true" />
+  </Target>
+
+</Project>
